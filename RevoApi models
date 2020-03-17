@@ -1,3 +1,1741 @@
+swagger: "2.0"
+info:
+  title: Revo API
+  description: Revo API for merchant APP.
+  version: 2.0.0.beta
+host: staging.revo.ru
+basePath: /api/loans/v1
+tags:
+- name: 'user_agent'
+  description: 'Login agent'
+- name: 'agent'
+  description: 'Agent info'
+- name: 'loans'
+  description: 'Make purchase'
+schemes:
+  - https
+paths:
+  /sessions:
+    post:
+      tags:
+      - 'user_agent'
+      summary: Creates agent session.
+      description: Returns token for next requests.
+      parameters:
+        - in: body
+          name: user
+          description: User credentials for authentication
+          schema:
+            $ref: "#/definitions/UserAuth"
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: "#/definitions/UserAuthResponse"
+        401:
+          description: Invalid credentials
+        422:
+          description: Unprocessible entity
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  login:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - неверный логин и/или пароль
+                      - не может быть пустым
+                  manager:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - слишком много попыток ввести пароль сегодня
+                  password:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - не может быть пустым
+    delete:
+      tags:
+      - 'user_agent'
+      summary: 'Destroy agent session'
+      description: 'Invalidate the current agent token'
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      responses:
+        200:
+          description: 'successful operation'
+        401:
+          description: 'Unauthorized'
+      security:
+      - api_key: []
+  /passwords:
+    post:
+      tags:
+      - 'user_agent'
+      summary: 'Send confirmation code'
+      description: 'Send confirmation code to agent phone'
+      parameters:
+      - in: 'body'
+        name: 'user'
+        required: true
+        description: 'User with mobile phone'
+        schema:
+          $ref: '#/definitions/UserPassword'
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      responses:
+        200:
+          description: 'successful operation'
+        400:
+          description: missing required params
+        422:
+          description: 'Unprocessible entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  login:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'логин не найден'
+                      - не может быть пустым
+                  manager:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - неверный логин
+    put:
+      tags:
+      - 'user_agent'
+      summary: 'Set new agent pin'
+      description: 'Check confirmation code, set new pin and return api_key'
+      parameters:
+      - in: 'body'
+        required: true
+        name: 'user'
+        description: 'User login, confirmation_code, new pin and pin confirmation'
+        schema:
+          $ref: '#/definitions/UserPasswordConfirmation'
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            $ref: "#/definitions/UserAuthResponse"
+        400:
+          description: missing required params
+        422:
+          description: 'Unprocessible entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  login:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - не может быть пустым
+                  confirmation_code:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - не может быть пустым
+                  password:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - не может быть пустым
+                      - неверной длины (может быть длиной ровно 4 символа)
+                      - не совпадает с подтверждением
+                  password_confirmation:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - не может быть пустым
+                  manager:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - неверный логин и/или смс-код
+  /agent:
+    get:
+      tags:
+      - 'agent'
+      summary: 'Get agent info'
+      description: 'Returns basic agent information'
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            $ref: '#/definitions/Agent'
+        401:
+          description: 'Unauthorized'
+      security:
+      - api_key: []
+  /stores/{id}/reports:
+    get:
+      tags:
+      - 'agent'
+      summary: 'Get agent reports'
+      description: 'Returns agent sales report by period for store'
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      parameters:
+      - name: 'id'
+        in: 'path'
+        required: true
+        type: 'string'
+        description: 'Agent store ID'
+      - name: 'from'
+        in: 'query'
+        required: true
+        type: 'string'
+        format: '%d-%m-%Y'
+      - name: 'to'
+        in: 'query'
+        required: true
+        type: 'string'
+        format: '%d-%m-%Y'
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            $ref: '#/definitions/SaleReport'
+        401:
+          description: 'Unauthorized'
+        404:
+          description: Not Found
+      security:
+      - api_key: []
+  /stores/{id}:
+    get:
+      tags:
+      - 'agent'
+      summary: 'Get store information'
+      description: 'Returns store information'
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      parameters:
+      - name: 'id'
+        in: 'path'
+        required: true
+        type: 'string'
+        description: 'Agent store ID'
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            $ref: '#/definitions/Store'
+        401:
+          description: 'Unauthorized'
+        404:
+          description: Not Found
+      security:
+      - api_key: []
+  /loan_requests:
+    post:
+      tags:
+      - 'loans'
+      summary: Create loan request
+      description: Create loan request record and return token
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      parameters:
+      - in: 'body'
+        name: loan_request
+        required: true
+        schema:
+          type: object
+          required:
+            - loan_request
+          properties:
+            loan_request:
+              type: object
+              required:
+                - store_id
+              properties:
+                store_id:
+                  type: string
+                  example: '1234'
+                order_id:
+                  type: string
+                  example: 'R2424'
+                employee_id:
+                  type: string
+                  example: 567
+                mobile_phone:
+                  type: string
+                  example: 79001234567
+                agree_insurance:
+                  type: integer
+                  example: 1
+                hold_until:
+                  type: string
+                  example: '2019-01-01 09:00:00'
+                additional_services:
+                  type: object
+                  properties:
+                    sms_info:
+                      type: boolean
+                      example: true
+                    mokko_virtual_card:
+                      type: boolean
+                      example: true
+            additional_data:
+              type: object
+              properties:
+                channel:
+                  type: string
+                  example: mobile
+                issued_loans:
+                  type: string
+                  example: '1'
+                previous_url:
+                  type: string
+                  example: 'https://revo.ru/where-to-buy'
+                last_client_decision:
+                  type: string
+                  example: '18.12.2017'
+                last_request_decision:
+                  type: string
+                  example: '2'
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              insurance_available:
+                type: boolean
+                example: false
+              loan_request:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: 'b4e9d33f6021ad31a1b494ffb7be29069d580dfc'
+        400:
+          description: missing required params
+        401:
+          description: Not Authorized
+        404:
+          description: Not Found
+        422:
+          description: 'Unprocessible entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  store_id:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - не может быть пустым
+                  store:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - торговая точка заблокирована
+      security:
+      - api_key: []
+  /loan_requests/{token}:
+    get:
+      tags:
+      - 'loans'
+      summary: Get tariff information
+      description: Get information about tariff and terms
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: string
+        description: 'Loan request unique token'
+      - name: 'amount'
+        in: 'query'
+        required: false
+        type: number
+        description: 'Amount'
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              loan_request:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    term:
+                      type: integer
+                      example: 3
+                    term_id:
+                      type: integer
+                      example: 123
+                    monthly_payment:
+                      type: 'number'
+                      format: 'float'
+                      example: 80.5
+                    total_of_payments:
+                      type: 'number'
+                      format: 'float'
+                      example: 240
+                    sum_with_discount:
+                      type: 'number'
+                      format: 'float'
+                      example: 210
+                    total_overpayment:
+                      type: 'number'
+                      format: 'float'
+                      example: 30
+                    sms_info:
+                      type: 'number'
+                      format: 'float'
+                      example: 59.0
+                    product_code:
+                      type: string
+                      example: 555
+                    min_amount:
+                      type: 'number'
+                      format: 'float'
+                      example: 30
+                    max_amount:
+                      type: 'number'
+                      format: 'float'
+                      example: 2000
+                    schedule:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          date:
+                            type: string
+                            example: '09-03-2018'
+                          amount:
+                            type: 'number'
+                            format: 'float'
+                            example: 80.5
+                    annual_rate:
+                      type: 'number'
+                      format: 'float'
+                      example: '53.05'
+                    insurance_amount:
+                      type: 'number'
+                      format: 'float'
+                      example: '99.56'
+                    calculated_insurance_amount:
+                      type: 'number'
+                      format: 'float'
+                      example: '99.56'
+        401:
+          description: Not Authorized
+        404:
+          description: Not Found
+        422:
+          description: 'unproccesable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  amount:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'не может быть пустым'
+                      - 'не является числом'
+                  mobile_phone:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'не может быть пустым'
+      security:
+      - api_key: []
+    put:
+      tags:
+      - 'loans'
+      summary: Update loan_request
+      description: Update phone or sum for loan_request
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: 'string'
+        description: 'Loan request unique token'
+      - name: 'loan_request'
+        in: 'body'
+        required: false
+        description: 'Loan request parameters'
+        schema:
+          type: object
+          properties:
+            loan_request:
+              type: object
+              properties:
+                mobile_phone:
+                  type: string
+                  example: '79998887776'
+                amount:
+                  type: string
+                  example: '1399.00'
+                agree_insurance:
+                  type: integer
+                  example: 1
+      responses:
+        200:
+          description: 'successful operation'
+        401:
+          description: Not Authorized
+        422:
+          description: 'unprocessable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  mobile_phone:
+                    type: 'array'
+                    items:
+                      type: string
+                      enum:
+                      - неверный код страны, телефон должен начинаться с цифры 7
+                      - телефон необходимо ввести в 10-значном формате
+                      - необходимо ввести российский номер сотового телефона
+                  amount:
+                    type: 'array'
+                    items:
+                      type: string
+                      enum:
+                      - 'имеет непредусмотренное значение, должно быть в пределах: 1000.0 - 10000.0'
+                  state:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - неверный статус заявки
+      security:
+      - api_key: []
+  /loan_requests/{token}/client:
+    get:
+      tags:
+      - 'loans'
+      summary: 'Client information'
+      description: 'Check client for loan_request'
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: 'string'
+        description: 'Unique loan_request token'
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              client:
+                $ref: "#/definitions/Client"
+        422:
+          description: 'unprocessable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  mobile_phone:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'не может быть пустым'
+                  amount:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'не может быть пустым'
+      security:
+      - api_key: []
+    post:
+      tags:
+      - 'loans'
+      summary: 'Create client'
+      description: 'Create client for loan_request'
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: 'string'
+      - name: 'client'
+        in: 'body'
+        required: true
+        description: 'Client form parameters'
+        schema:
+          type: object
+          properties:
+            client:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  example: Иван
+                middle_name:
+                  type: string
+                  example: Иванович
+                last_name:
+                  type: string
+                  example: Иванов
+                birth_date:
+                  type: string
+                  example: '01-01-1990'
+                email:
+                  type: string
+                  example: 'user@example.com'
+                area:
+                  type: string
+                  example: 'Москва'
+                settlement:
+                  type: string
+                  example: 'Москва'
+                street:
+                  type: string
+                  example: 'Новая'
+                house:
+                  type: string
+                  example: '123'
+                building:
+                  type: string
+                  example: '123'
+                apartment:
+                  type: string
+                  example: '123'
+                postal_code:
+                  type: string
+                  example: '12345'
+                black_mark:
+                  type: boolean
+                  example: false
+                agrees_bki:
+                  type: boolean
+                  example: '1'
+                agrees_terms:
+                  type: boolean
+                  example: '1'
+                confirmation_code:
+                  type: string
+                  example: '1111'
+                password:
+                  type: string
+                  example: 's3cure p4ssw0rd!'
+                password_confirmation:
+                  type: string
+                  example: 's3cure p4ssw0rd!'
+                id_documents:
+                  type: object
+                  properties:
+                    polish_id:
+                      $ref: "#/definitions/IdDocument"
+                    polish_pesel:
+                      $ref: "#/definitions/IdDocument"
+                    russian_passport:
+                      $ref: "#/definitions/RussianPassport"
+                provider_data:
+                  type: object
+      responses:
+        201:
+          description: 'client personal information was saved'
+          schema:
+            type: object
+            properties:
+              client:
+                $ref: "#/definitions/ClientWithDecision"
+        400:
+          description: Client params are missing
+        404:
+          description: Not Found (loan request was closed)
+        401:
+          description: Not Authorized (Authorization header not present)
+        422:
+          description: 'unprocessable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  mobile_phone:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'не может быть пустым'
+                  email:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - 'не может быть пустым'
+                        - не является адресом электронной почты
+                  id_documents:
+                    type: object
+                    properties:
+                      polish_id:
+                        type: array
+                        items:
+                          type: string
+                          enum:
+                          - 'Номер не может быть пустым'
+                          - 'отсутствует'
+                      polish_pesel:
+                        type: array
+                        items:
+                          type: string
+                          enum:
+                          - 'отсутствует'
+                          - 'Номер не может быть пустым'
+                      russian_passport:
+                        type: array
+                        items:
+                          type: string
+                          enum:
+                          - 'отсутствует'
+                          - 'Номер не может быть пустым'
+                  regulations:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+                  personal_data:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+                  credit_bureaus:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+                  client:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - клиент еще не был создан
+                  area:
+                    type: array
+                    items:
+                      enum:
+                        - не может быть пустым
+                  settlement:
+                    type: array
+                    items:
+                      enum:
+                        - не может быть пустым
+                  street:
+                    type: array
+                    items:
+                      enum:
+                        - не может быть пустым
+                  house:
+                    type: array
+                    items:
+                      enum:
+                        - не может быть пустым
+                  password:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - недостаточной длины (не может быть меньше 4 символов)
+                  first_name:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+                  middle_name:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+                  last_name:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+                  birth_date:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+                        - не является датой
+                        - допустимый возраст от 18 до 120 лет
+                  confirmation_code:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+                        - неправильный код
+                  agrees_bki:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - нужно подтвердить
+                  agrees_terms:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - нужно подтвердить
+                  password_confirmation:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не совпадает с подтверждением
+                  amount:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+        452:
+          description: 'the loan was declined'
+          schema:
+            type: object
+            properties:
+              client:
+                $ref: "#/definitions/ClientWithDecision"
+      security:
+      - api_key: []
+    patch:
+      tags:
+      - 'loans'
+      summary: 'Upload documents'
+      description: 'Upload documents photo for client'
+      produces:
+        - application/json
+      consumes:
+        - multipart/form-data
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: 'string'
+      - in: formData
+        name: 'client[documents][name]'
+        type: file
+        required: false
+        description: Photo with client's name and photo
+      - in: formData
+        name: 'client[documents][living_addr]'
+        type: file
+        required: false
+        description: Client photo
+      - in: formData
+        name: 'client[documents][client_photo]'
+        type: file
+        required: false
+        description: Photo for client with passport
+      - in: formData
+        name: 'client[documents][client_with_passport]'
+        type: file
+        required: false
+        description: Photo for client with passport
+      - in: formData
+        name: 'client[documents][previous_passport]'
+        type: file
+        required: false
+        description: Photo for previous clien's name and photo
+      - in: formData
+        name: 'client[documents][issued_by]'
+        type: file
+        required: false
+        description: Photo for 'issued by' page
+      - in: formData
+        name: 'client[documents][first_two_pages]'
+        type: file
+        required: false
+        description: Photo for first two passport pages
+      responses:
+        200:
+          description: 'successful operation'
+        401:
+          description: Unauthorized
+        404:
+          description: Not Found (loan request was closed)
+        422:
+          description: 'unprocessable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  name:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - файл слишком большого размера
+                  living_addr:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - файл слишком большого размера
+                  client_photo:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - файл слишком большого размера
+                  client_with_passport:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - файл слишком большого размера
+                  previous_passport:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - файл слишком большого размера
+                  issued_by:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - файл слишком большого размера
+                  first_two_pages:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - файл слишком большого размера
+                  kind:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - 'неверное значение типа документа'
+                  client:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - 'не удалось найти клиента'
+
+  /loan_requests/{token}/client/check_code:
+    post:
+      tags:
+      - 'loans'
+      summary: 'Check client code'
+      description: ''
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: 'string'
+      - name: 'code'
+        in: 'body'
+        required: true
+        description: 'Code provided by the client'
+        schema:
+          type: string
+          example: '1234'
+      responses:
+        200:
+          description: 'code was checked'
+          schema:
+            type: object
+            properties:
+              code:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: true
+      security:
+      - api_key: []
+
+  /loan_requests/{token}/confirmation:
+    post:
+      tags:
+      - 'loans'
+      summary: Confirm client
+      description: Confirm client by code
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: string
+      - name: 'code'
+        in: 'body'
+        required: true
+        schema:
+          type: object
+          properties:
+            code:
+              type: string
+              example: '1111'
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            $ref: '#/definitions/ClientDecision'
+        401:
+          description: Not Authorized
+        404:
+          description: Not Found
+        422:
+          description: 'unprocessable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  code:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'неправильный код'
+                      - 'не может быть пустым'
+                  client:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не может быть пустым
+
+      security:
+      - api_key: []
+  /loan_requests/{token}/client/confirmation:
+    post:
+      tags:
+      - 'loans'
+      summary: 'Send confirmation code'
+      description: 'Send confirmation code to client'
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: string
+        description: 'Unique loan_request token'
+      responses:
+        200:
+          description: 'successful operation'
+        422:
+          description: 'unprocessable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  mobile_phone:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'не может быть пустым'
+                  amount:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'не может быть пустым'
+      security:
+        - api_key: []
+  /loan_requests/{token}/client/self_registration:
+    post:
+      tags:
+      - 'loans'
+      summary: 'Start self-registration'
+      description: 'Creates a client and sends them a text with a link to the form and the password'
+      produces:
+      - 'application/json'
+      consumes:
+      - 'application/json'
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: string
+        description: 'Unique loan_request token'
+      - name: 'mobile_phone'
+        in: 'query'
+        required: true
+        type: string
+        description: 'Mobile phone number for client'
+      - name: 'skip_message'
+        in: 'query'
+        required: false
+        type: boolean
+        description: 'Skip sms message with reg form url'
+      responses:
+        201:
+          description: 'a client was created and the text was sent'
+        422:
+          description: 'client with that phone number already exists'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  mobile_phone:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - 'телефон необходимо ввести в 10-значном формате'
+              client:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: 12
+                  mobile_phone:
+                    type: string
+                    example: '8880001122'
+                  email:
+                    type: string
+                    example: 'john.doe@revo.ru'
+      security:
+        - api_key: []
+  /loan_requests/{token}/loan:
+    post:
+      tags:
+      - 'loans'
+      summary: 'Create approved loan'
+      description: 'Create LoanApplication with `approved` status'
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: 'string'
+      - name: ''
+        in: 'body'
+        required: true
+        schema:
+          type: 'object'
+          properties:
+            term:
+              type: 'integer'
+              example: 3
+            term_id:
+              type: integer
+              example: 123
+            sms_info:
+              type: boolean
+              example: '1'
+      responses:
+        200:
+          description: 'successful operation'
+        401:
+          description: Not Authorized
+        422:
+          description: 'unprocessable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  amount:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - 'имеет непредусмотренное значение, должно быть в пределах: 1000.0 - 10000.0'
+                  base:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - 'К сожалению, ваша заявка отклонена'
+                  loan_request:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не подтвержден смс-кодом
+                  term_id:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - не найден
+                  store:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - торговая точка заблокирована
+      security:
+      - api_key: []
+  /loan_requests/{token}/loan/finalization:
+    post:
+      tags:
+      - 'loans'
+      summary: 'Finalize loan'
+      description: 'Finalize a loan application'
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: string
+      - name: 'loan'
+        in: 'body'
+        required: true
+        description: 'Loan form parameters'
+        schema:
+          type: object
+          properties:
+            loan:
+              type: object
+              properties:
+                agree_processing:
+                  type: boolean
+                  example: '1'
+                confirmation_code:
+                  type: string
+                  example: '1111'
+                agree_sms_info:
+                  type: boolean
+                  example: true
+                employee_id:
+                  type: number
+                  example: 123
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              offer_id:
+                type: string
+                example: '123456789'
+              loan_application:
+                type: object
+                properties:
+                  barcodes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        image:
+                          type: string
+                          example: 'data:image/svg+xml;base64,AbCd=='
+                        text:
+                          type: string
+                          example: '1ZZ011235616399006082053267'
+        422:
+          description: 'unprocessable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  agree_processing:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - 'нужно подтвердить'
+                        - 'не может быть пустым'
+                  confirmation_code:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - 'неправильный код'
+                  loan_application:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - 'для финализации займ должен быть подтвержден'
+                        - 'не может быть пустым'
+      security:
+      - api_key: []
+  /loan_requests/{token}/loan/sales_reciept:
+    patch:
+      tags:
+      - 'loans'
+      summary: 'Update loan sales reciept'
+      description: 'Update loan sales reciept'
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: 'string'
+      - name: 'loan'
+        in: 'body'
+        required: true
+        description: 'Loan form parameters'
+        schema:
+          type: object
+          properties:
+            loan:
+              type: object
+              properties:
+                input_text:
+                  type: string
+                  example: true
+      responses:
+        201:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              sucess:
+                type: boolean
+                example: true'
+        208:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              sucess:
+                type: boolean
+                example: true
+              result:
+                type: array
+                items:
+                  example: 'already exists'
+        422:
+          description: 'error operation. incorrect body parameters, etc.'
+          schema:
+            type: object
+        405:
+          description: 'Method not allowed'
+          schema:
+            type: object
+            properties:
+              sucess:
+                type: boolean
+                example: true
+              error:
+                type: array
+                items:
+                  example: ['method not allowed']
+  /loan_requests/{token}/loan/bill:
+    put:
+      tags:
+      - 'loans'
+      summary: 'Update pay_at field'
+      description: 'Update pay_at field'
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: 'string'
+      - name: 'loan'
+        in: 'body'
+        required: true
+        description: 'Loan form parameters'
+        schema:
+          type: object
+          properties:
+            loan:
+              type: object
+              properties:
+                bill:
+                  type: boolean
+                  example: true
+      responses:
+        201:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              offer_id:
+                type: string
+                example: '123456789'
+              status:
+                type: array
+                items:
+                  example: 'confirmed'
+        208:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              offer_id:
+                type: string
+                example: '123456789'
+              status:
+                type: array
+                items:
+                  example: 'already confirmed'
+        422:
+          description: 'error operation'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  bill:
+                    type: array
+                    items:
+                      example: 'must be boolean'
+                  loan_application:
+                    type: array
+                    items:
+                      example: 'unprocessable entity'
+        404:
+          description: 'error operation'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  loan_request:
+                    type: array
+                    items:
+                      example: 'not found'
+                  loan_application:
+                    type: array
+                    items:
+                      example: 'not found'
+  /loan_requests/{token}/documents/{kind}.{format}:
+    get:
+      tags:
+      - 'loans'
+      summary: 'Get documents'
+      description: 'Load loan documents by kind'
+      parameters:
+      - name: 'token'
+        in: 'path'
+        required: true
+        type: 'string'
+      - name: 'kind'
+        in: 'path'
+        required: true
+        type: string
+        enum: [name, living_addr, client_with_passport, previous_passport, issued_by, first_two_pages, signature, offer, return_signature, asp, agreement, third_parties, statement, fiscal, insurance]
+      - name: format
+        in: path
+        required: true
+        type: string
+        default: html
+        enum: [html, pdf]
+      responses:
+        200:
+          description: 'successful operation'
+        401:
+          description: Not Authorized
+        404:
+          description: Incorrect document kind
+        422:
+          description: 'unprocessable entity'
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  client:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - ещё не создан
+      security:
+      - api_key: []
+  /orders:
+    get:
+      tags:
+      - returns
+      summary: List orders
+      description: List all orders with filters
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      parameters:
+      - in: query
+        name: store_id
+        required: true
+        type: integer
+      - in: query
+        name: filters[mobile_phone]
+        required: false
+        type: string
+      - in: query
+        name: filters[id_document_no]
+        required: false
+        type: string
+      - in: query
+        name: filters[order_id]
+        required: false
+        type: number
+      - in: query
+        name: filters[guid]
+        required: false
+        type: string
+      - in: query
+        name: filters[email]
+        required: false
+        type: string
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              orders:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: 123
+                    client_name:
+                      type: string
+                      example: 'Pan Ivanov'
+                    mobile_phone:
+                      type: string
+                      example: '79990001122'
+                    barcode:
+                      type: string
+                      example: '1234567890987654321'
+                    created_at:
+                      type: string
+                      example: '2018-09-10T14:22:00+03:00'
+                    amount:
+                      type: number
+                      example: 250.25
+                    remaining_amount:
+                      type: number
+                      example: 140.05
+                    guid:
+                      type: string
+                      example: '123456789'
+        404:
+          description: Store not found
+      security:
+      - api_key: []
+  /orders/{id}/send_return_confirmation_code:
+    post:
+      tags:
+      - returns
+      summary: 'Send return confirmation code'
+      description: 'Send confirmation code for creating a return'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+      responses:
+        200:
+          description: 'successful operation'
+      security:
+      - api_key: []
+  /returns:
+    post:
+      tags:
+      - returns
+      summary: 'Create a return'
+      description: 'Create a return'
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - name: return[order_id]
+        in: formData
+        required: true
+        type: string
+      - name: return[confirmation_code]
+        in: formData
+        required: true
+        type: string
+      - name: return[amount]
+        in: formData
+        required: true
+        type: number
+      - name: return[store_id]
+        in: formData
+        required: true
+        type: integer
+      responses:
+        200:
+          description: 'successful operation'
+          schema:
+            type: object
+            properties:
+              return:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: 234
+                  barcode:
+                    type: string
+                    example: '2ZZ011235616399006082053267'
+        400:
+          description: Missing required params
+        422:
+          description: Unprocessible entity
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                properties:
+                  confirmation_code:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'не может быть пустым'
+                      - 'неправильный код'
+                  order_id:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - 'не может быть пустым'
+                      - 'не найден'
+                  amount:
+                    type: array
+                    items:
+                      type: number
+                      enum:
+                      - 'не может быть пустым'
+                      - 'не является числом'
+                      - 'может иметь значение меньшее или равное 1234.56'
+                  store_id:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - не найден
+                      - не может быть пустым
+      security:
+      - api_key: []
+  /returns/{id}/confirm:
+    post:
+      tags:
+      - returns
+      summary: 'Confirm a return'
+      description: 'Confirm a return'
+      parameters:
+      - name: 'id'
+        in: 'path'
+        required: true
+        type: string
+      responses:
+        200:
+          description: 'successful operation'
+      security:
+      - api_key: []
+  /returns/{id}/cancel:
+    post:
+      tags:
+      - returns
+      summary: 'Cancel a return'
+      description: 'Cancel a return'
+      parameters:
+      - name: 'id'
+        in: 'path'
+        required: true
+        type: string
+      responses:
+        200:
+          description: 'successful operation'
+      security:
+      - api_key: []
+
 securityDefinitions:
   api_key:
     type: apiKey
@@ -90,10 +1828,10 @@ definitions:
         properties:
           first_name:
             type: 'string'
-            example: РРІР°РЅ
+            example: Иван
           last_name:
             type: 'string'
-            example: РРІР°РЅРѕРІ
+            example: Иванов
           avatar:
             type: 'string'
             example: https://revo.ru/my/avatar.png
@@ -113,13 +1851,13 @@ definitions:
             example: 234
           name:
             type: 'string'
-            example: Р”РµС‚СЃРєРёР№ РјРёСЂ
+            example: Детский мир
           name_by_trader:
             type: 'string'
-            example: Р”РµС‚СЃРєРёР№ РјРёСЂ
+            example: Детский мир
           address:
             type: 'string'
-            example: РњРѕСЃРєРІР°, СѓР». Р РµРІРѕ, Рґ.1
+            example: Москва, ул. Рево, д.1
           tariff_min:
             type: 'number'
             format: 'float'
@@ -169,13 +1907,13 @@ definitions:
         properties:
           first_name:
             type: 'string'
-            example: 'РРІР°РЅ'
+            example: 'Иван'
           middle_name:
             type: 'string'
-            example: 'РРІР°РЅРѕРІРёС‡'
+            example: 'Иванович'
           last_name:
             type: 'string'
-            example: 'РРІР°РЅРѕРІ'
+            example: 'Иванов'
           credit_limit:
             type: 'number'
             format: 'float'
@@ -206,22 +1944,22 @@ definitions:
         example: '01-01-1990'
       first_name:
         type: string
-        example: РРІР°РЅ
+        example: Иван
       middle_name:
         type: string
-        example: РРІР°РЅРѕРІРёС‡
+        example: Иванович
       last_name:
         type: string
-        example: РРІР°РЅРѕРІ
+        example: Иванов
       area:
         type: string
-        example: 'РњРѕСЃРєРІР°'
+        example: 'Москва'
       settlement:
         type: string
-        example: 'РњРѕСЃРєРІР°'
+        example: 'Москва'
       street:
         type: string
-        example: 'РќРѕРІР°СЏ'
+        example: 'Новая'
       house:
         type: string
         example: '123'
@@ -265,22 +2003,22 @@ definitions:
         example: '01-01-1990'
       first_name:
         type: string
-        example: РРІР°РЅ
+        example: Иван
       middle_name:
         type: string
-        example: РРІР°РЅРѕРІРёС‡
+        example: Иванович
       last_name:
         type: string
-        example: РРІР°РЅРѕРІ
+        example: Иванов
       area:
         type: string
-        example: 'РњРѕСЃРєРІР°'
+        example: 'Москва'
       settlement:
         type: string
-        example: 'РњРѕСЃРєРІР°'
+        example: 'Москва'
       street:
         type: string
-        example: 'РќРѕРІР°СЏ'
+        example: 'Новая'
       house:
         type: string
         example: '123'
@@ -324,7 +2062,7 @@ definitions:
         example: 210
       decision_message:
         type: string
-        example: РџРѕР·РґСЂР°РІР»СЏРµРј!
+        example: Поздравляем!
 
   LoanApplicationInfo:
     type: object
