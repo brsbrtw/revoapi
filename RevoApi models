@@ -1,0 +1,339 @@
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: Authorization
+    in: header
+definitions:
+  IdDocument:
+    type: object
+    properties:
+      number:
+        type: string
+        example: 'ABC123456'
+      expiry_date:
+        type: string
+        example: '02-03-2025'
+  RussianPassport:
+    type: object
+    properties:
+      number:
+        type: string
+        example: '7701'
+      series:
+        type: string
+        example: '123456'
+      expiry_date:
+        type: string
+        example: null
+  UserAuth:
+    type: object
+    required:
+      - user
+    properties:
+      user:
+        type: object
+        required:
+        - login
+        - password
+        properties:
+          login:
+            type: string
+            example: 79001234567
+          password:
+            type: string
+            example: 123456
+  UserAuthResponse:
+    type: object
+    properties:
+      user:
+        type: object
+        properties:
+          authentication_token:
+            type: string
+            example: f98496242593f763b2df
+  UserPassword:
+    type: 'object'
+    required:
+    - 'user'
+    properties:
+      user:
+        type: 'object'
+        required:
+        - 'login'
+        properties:
+          login:
+            type: 'string'
+            example: 79001234567
+  UserPasswordConfirmation:
+    type: 'object'
+    properties:
+      user:
+        type: 'object'
+        properties:
+          login:
+            type: 'string'
+            example: 79001234567
+          confirmation_code:
+            type: 'string'
+            example: 1111
+          password:
+            type: 'string'
+            example: 123456
+          password_confirmation:
+            type: 'string'
+            example: 123456
+  Agent:
+    type: 'object'
+    properties:
+      agent:
+        type: 'object'
+        properties:
+          first_name:
+            type: 'string'
+            example: РРІР°РЅ
+          last_name:
+            type: 'string'
+            example: РРІР°РЅРѕРІ
+          avatar:
+            type: 'string'
+            example: https://revo.ru/my/avatar.png
+          stores:
+            type: 'array'
+            items:
+              $ref: '#/definitions/Store'
+  Store:
+    type: 'object'
+    properties:
+      store:
+        type: 'object'
+        properties:
+          id:
+            type: 'integer'
+            format: 'int32'
+            example: 234
+          name:
+            type: 'string'
+            example: Р”РµС‚СЃРєРёР№ РјРёСЂ
+          name_by_trader:
+            type: 'string'
+            example: Р”РµС‚СЃРєРёР№ РјРёСЂ
+          address:
+            type: 'string'
+            example: РњРѕСЃРєРІР°, СѓР». Р РµРІРѕ, Рґ.1
+          tariff_min:
+            type: 'number'
+            format: 'float'
+            description: 'Minimum available purchase price'
+            example: 1000.0
+          tariff_max:
+            type: 'number'
+            format: 'float'
+            description: 'Maximum available purchase price'
+            example: 50000.0
+          sms_info:
+            type: 'boolean'
+            example: true
+            description: 'Sms-information service availability for store'
+          sms_info_price:
+            type: 'number'
+            format: 'float'
+            description: 'Sms-information service price'
+            example: 59.9
+
+  SaleReport:
+    type: 'object'
+    properties:
+      report:
+        type: 'object'
+        properties:
+          start_at:
+            type: 'string'
+            format: '%d-%m-%Y'
+            example: 05-01-2018
+          end_at:
+            type: 'string'
+            format: '%d-%m-%Y'
+            example: 15-01-2018
+          loans_count:
+            type: 'integer'
+            example: 2
+          amount:
+            type: 'string'
+            format: '%n %c'
+            example: '999.2'
+  ClientDecision:
+    type: 'object'
+    properties:
+      client:
+        type: 'object'
+        properties:
+          first_name:
+            type: 'string'
+            example: 'РРІР°РЅ'
+          middle_name:
+            type: 'string'
+            example: 'РРІР°РЅРѕРІРёС‡'
+          last_name:
+            type: 'string'
+            example: 'РРІР°РЅРѕРІ'
+          credit_limit:
+            type: 'number'
+            format: 'float'
+            example: '1255.2'
+          decision:
+            type: 'string'
+            example: 'declined'
+          decision_code:
+            type: number
+            example: 710
+          decision_message:
+            type: string
+            example: 'Sorry :('
+  Client:
+    type: object
+    properties:
+      id:
+        type: integer
+        example: 1
+      mobile_phone:
+        type: string
+        example: '79998887776'
+      email:
+        type: string
+        example: 'user@example.com'
+      birth_date:
+        type: string
+        example: '01-01-1990'
+      first_name:
+        type: string
+        example: РРІР°РЅ
+      middle_name:
+        type: string
+        example: РРІР°РЅРѕРІРёС‡
+      last_name:
+        type: string
+        example: РРІР°РЅРѕРІ
+      area:
+        type: string
+        example: 'РњРѕСЃРєРІР°'
+      settlement:
+        type: string
+        example: 'РњРѕСЃРєРІР°'
+      street:
+        type: string
+        example: 'РќРѕРІР°СЏ'
+      house:
+        type: string
+        example: '123'
+      building:
+        type: string
+        example: '123'
+      apartment:
+        type: string
+        example: '123'
+      postal_code:
+        type: string
+        example: '12345'
+      credit_limit:
+        type: string
+        example: '33000.00'
+      missing_documents:
+        type: 'array'
+        items:
+          type: string
+          enum:
+          - name
+          - client_with_passport
+          - living_addr
+      id_documents:
+        type: object
+        properties:
+          polish_id:
+            $ref: "#/definitions/IdDocument"
+          polish_pesel:
+            $ref: "#/definitions/IdDocument"
+          russian_passport:
+            $ref: "#/definitions/RussianPassport"
+  ClientWithDecision:
+    type: object
+    properties:
+      email:
+        type: string
+        example: 'user@example.com'
+      birth_date:
+        type: string
+        example: '01-01-1990'
+      first_name:
+        type: string
+        example: РРІР°РЅ
+      middle_name:
+        type: string
+        example: РРІР°РЅРѕРІРёС‡
+      last_name:
+        type: string
+        example: РРІР°РЅРѕРІ
+      area:
+        type: string
+        example: 'РњРѕСЃРєРІР°'
+      settlement:
+        type: string
+        example: 'РњРѕСЃРєРІР°'
+      street:
+        type: string
+        example: 'РќРѕРІР°СЏ'
+      house:
+        type: string
+        example: '123'
+      building:
+        type: string
+        example: '123'
+      apartment:
+        type: string
+        example: '123'
+      postal_code:
+        type: string
+        example: '12345'
+      credit_limit:
+        type: number
+        example: 33000
+      missing_documents:
+        type: 'array'
+        items:
+          type: string
+          enum:
+          - name
+          - client_with_passport
+          - living_addr
+      id_documents:
+        type: object
+        properties:
+          polish_id:
+            $ref: "#/definitions/IdDocument"
+          polish_pesel:
+            $ref: "#/definitions/IdDocument"
+          russian_passport:
+            $ref: "#/definitions/RussianPassport"
+      decision:
+        type: string
+        example: approved
+      credit_decision:
+        type: string
+        example: approved
+      decision_code:
+        type: number
+        example: 210
+      decision_message:
+        type: string
+        example: РџРѕР·РґСЂР°РІР»СЏРµРј!
+
+  LoanApplicationInfo:
+    type: object
+    properties:
+      id:
+        type: integer
+        example: 125433
+      guid:
+        type: string
+        example: '12447567'
+      documents:
+        type: object
